@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d0f">
+  <title>Stackr — JPG to PDF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --surface: #161619;
+      --surface-2: #1f1f24;
+      --line: #2a2a30;
+      --ink: #f4f3ee;
+      --muted: #8a8a93;
+      --acc: #d6ff3f;
+      --acc-dim: #a8cc2f;
+      --danger: #ff5c5c;
+      --r: 18px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Bricolage Grotesque', sans-serif;
+      overflow-x: hidden;
+      background-image: radial-gradient(circle at 88% -5%, rgba(214, 255, 63, .10), transparent 42%);
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 0 20px 120px
+    }
+
+    header {
+      padding: 26px 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: var(--acc);
+      display: grid;
+      place-items: center;
+      color: #0d0d0f;
+      font-weight: 800;
+      transform: rotate(-6deg)
+    }
+
+    .logo svg {
+      width: 19px;
+      height: 19px
+    }
+
+    .brand h1 {
+      font-size: 1.32rem;
+      font-weight: 800;
+      letter-spacing: -.03em
+    }
+
+    .brand span {
+      font-family: 'Space Mono', monospace;
+      font-size: .6rem;
+      color: var(--muted);
+      letter-spacing: .18em;
+      display: block;
+      margin-top: -2px
+    }
+
+    .drop {
+      border: 1.5px dashed var(--line);
+      border-radius: var(--r);
+      background: var(--surface);
+      padding: 42px 22px;
+      text-align: center;
+      transition: .22s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop.over {
+      border-color: var(--acc);
+      background: var(--surface-2);
+      transform: scale(.99)
+    }
+
+    .drop .ic {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 16px;
+      border-radius: 16px;
+      background: var(--surface-2);
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line)
+    }
+
+    .drop .ic svg {
+      width: 26px;
+      height: 26px;
+      stroke: var(--acc)
+    }
+
+    .drop p {
+      font-size: 1.04rem;
+      font-weight: 600;
+      letter-spacing: -.01em
+    }
+
+    .drop small {
+      display: block;
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: .82rem;
+      font-family: 'Space Mono', monospace
+    }
+
+    .pick {
+      margin-top: 18px;
+      display: inline-block;
+      background: var(--acc);
+      color: #0d0d0f;
+      font-weight: 700;
+      padding: 11px 26px;
+      border-radius: 999px;
+      font-size: .92rem;
+      cursor: pointer
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 26px 2px 12px
+    }
+
+    .bar h2 {
+      font-size: .78rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace
+    }
+
+    .clear {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-family: 'Space Mono', monospace;
+      font-size: .74rem;
+      cursor: pointer;
+      letter-spacing: .05em
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 11px
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      animation: pop .3s cubic-bezier(.2, .9, .3, 1.4) both;
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(.97)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: var(--surface-2)
+    }
+
+    .meta {
+      flex: 1;
+      min-width: 0
+    }
+
+    .meta b {
+      display: block;
+      font-size: .9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -.01em
+    }
+
+    .meta small {
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: .7rem
+    }
+
+    .idx {
+      font-family: 'Space Mono', monospace;
+      font-size: .72rem;
+      color: var(--acc);
+      width: 22px;
+      text-align: center;
+      flex-shrink: 0
+    }
+
+    .ctrls {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0
+    }
+
+    .ctrls button {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--ink);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: .9rem
+    }
+
+    .ctrls button:disabled {
+      opacity: .28
+    }
+
+    .ctrls .del {
+      color: var(--danger)
+    }
+
+    .opts {
+      margin-top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 6px 16px
+    }
+
+    .opt {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .opt:last-child {
+      border-bottom: none
+    }
+
+    .opt label {
+      font-size: .92rem;
+      font-weight: 500
+    }
+
+    .opt select {
+      background: var(--surface-2);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 7px 12px;
+      font-family: 'Space Mono', monospace;
+      font-size: .8rem
+    }
+
+    .footbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, var(--bg) 72%, transparent);
+      max-width: 480px;
+      margin: 0 auto
+    }
+
+    .go {
+      width: 100%;
+      background: var(--acc);
+      color: #0d0d0f;
+      border: none;
+      border-radius: 14px;
+      padding: 17px;
+      font-family: 'Bricolage Grotesque';
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -.01em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      transition: .18s
+    }
+
+    .go:disabled {
+      background: var(--surface-2);
+      color: var(--muted);
+      cursor: not-allowed
+    }
+
+    .go:active:not(:disabled) {
+      transform: scale(.98)
+    }
+
+    .go svg {
+      width: 18px;
+      height: 18px
+    }
+
+    .spin {
+      width: 18px;
+      height: 18px;
+      border: 2.5px solid rgba(0, 0, 0, .25);
+      border-top-color: #0d0d0f;
+      border-radius: 50%;
+      animation: rot .7s linear infinite
+    }
+
+    @keyframes rot {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      font-family: 'Space Mono', monospace;
+      font-size: .8rem;
+      padding: 18px 0
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 96px;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: #0d0d0f;
+      padding: 11px 20px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: .86rem;
+      opacity: 0;
+      transition: .3s;
+      pointer-events: none;
+      z-index: 9
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0)
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M4 4h11l5 5v11H4z" />
+            <path d="M15 4v5h5" />
+          </svg>
+        </div>
+        <div>
+          <h1>Stackr</h1>
+          <span>JPG → PDF</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="drop" id="drop">
+      <div class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 16V4M7 9l5-5 5 5" />
+          <path d="M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
+        </svg>
+      </div>
+      <p>Drop your JPGs here</p>
+      <small>or tap to browse · stays on your device</small>
+      <label class="pick">Choose photos
+        <input type="file" id="file" accept="image/jpeg,image/jpg,image/png" multiple class="hidden">
+      </label>
+    </div>
+
+    <div id="section" class="hidden">
+      <div class="bar">
+        <h2 id="count">0 images</h2>
+        <button class="clear" id="clear">Clear all</button>
+      </div>
+      <div class="list" id="list"></div>
+
+      <div class="opts">
+        <div class="opt">
+          <label>Page size</label>
+          <select id="size">
+            <option value="fit">Fit to image</option>
+            <option value="a4">A4</option>
+            <option value="letter">Letter</option>
+          </select>
+        </div>
+        <div class="opt">
+          <label>Orientation</label>
+          <select id="orient">
+            <option value="auto">Auto</option>
+            <option value="p">Portrait</option>
+            <option value="l">Landscape</option>
+          </select>
+        </div>
+        <div class="opt">
+          <label>Margin</label>
+          <select id="margin">
+            <option value="0">None</option>
+            <option value="20">Small</option>
+            <option value="40">Medium</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footbar">
+    <button class="go" id="go" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M12 3v12m0 0l-4-4m4 4l4-4" />
+        <path d="M5 21h14" />
+      </svg>
+      <span>Add images to start</span>
+    </button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const { jsPDF } = window.jspdf;
+    let images = []; // {id,name,size,dataUrl,w,h}
+    let uid = 0;
+
+    const $ = id => document.getElementById(id);
+    const drop = $('drop'), fileInput = $('file'), list = $('list'), section = $('section'),
+      countEl = $('count'), goBtn = $('go'), clearBtn = $('clear'), toast = $('toast');
+
+    function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 2200) }
+    function fmtSize(b) { return b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(0) + ' KB' : (b / 1048576).toFixed(1) + ' MB' }
+
+    function loadFile(file) {
+      return new Promise(res => {
+        const r = new FileReader();
+        r.onload = e => {
+          const img = new Image();
+          img.onload = () => res({ id: ++uid, name: file.name, size: file.size, dataUrl: e.target.result, w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => res(null);
+          img.src = e.target.result;
+        };
+        r.onerror = () => res(null);
+        r.readAsDataURL(file);
+      });
+    }
+
+    async function handleFiles(files) {
+      const valid = [...files].filter(f => /image\/(jpe?g|png)/i.test(f.type));
+      if (!valid.length) { showToast('No valid images found'); return }
+      for (const f of valid) { const o = await loadFile(f); if (o) images.push(o) }
+      render();
+      showToast(valid.length + ' added');
+    }
+
+    function render() {
+      if (!images.length) { section.classList.add('hidden'); updateGo(); return }
+      section.classList.remove('hidden');
+      countEl.textContent = images.length + (images.length === 1 ? ' image' : ' images');
+      list.innerHTML = '';
+      images.forEach((im, i) => {
+        const c = document.createElement('div'); c.className = 'card';
+        c.innerHTML = `
+      <div class="idx">${String(i + 1).padStart(2, '0')}</div>
+      <img class="thumb" src="${im.dataUrl}" alt="">
+      <div class="meta"><b>${im.name}</b><small>${im.w}×${im.h} · ${fmtSize(im.size)}</small></div>
+      <div class="ctrls">
+        <button data-up ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button data-down ${i === images.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="del" data-del>✕</button>
+      </div>`;
+        c.querySelector('[data-up]').onclick = () => { if (i > 0) { [images[i - 1], images[i]] = [images[i], images[i - 1]]; render() } };
+        c.querySelector('[data-down]').onclick = () => { if (i < images.length - 1) { [images[i + 1], images[i]] = [images[i], images[i + 1]]; render() } };
+        c.querySelector('[data-del]').onclick = () => { images.splice(i, 1); render() };
+        list.appendChild(c);
+      });
+      updateGo();
+    }
+
+    function updateGo() {
+      const span = goBtn.querySelector('span');
+      if (images.length) { goBtn.disabled = false; span.textContent = 'Convert to PDF' }
+      else { goBtn.disabled = true; span.textContent = 'Add images to start' }
+    }
+
+    async function generate() {
+      if (!images.length) return;
+      goBtn.disabled = true;
+      goBtn.innerHTML = '<div class="spin"></div><span>Building PDF…</span>';
+      await new Promise(r => setTimeout(r, 40));
+
+      const sizeOpt = $('size').value, orientOpt = $('orient').value, margin = +$('margin').value;
+      const PAGES = { a4: [595.28, 841.89], letter: [612, 792] };
+      let pdf = null;
+
+      try {
+        images.forEach((im, i) => {
+          let pw, ph, orient;
+          if (sizeOpt === 'fit') {
+            orient = im.w >= im.h ? 'l' : 'p';
+            pw = im.w; ph = im.h;
+          } else {
+            let base = PAGES[sizeOpt];
+            orient = orientOpt === 'auto' ? (im.w >= im.h ? 'l' : 'p') : orientOpt;
+            pw = orient === 'l' ? base[1] : base[0];
+            ph = orient === 'l' ? base[0] : base[1];
+          }
+          if (orientOpt !== 'auto' && sizeOpt === 'fit') orient = orientOpt;
+
+          if (!pdf) { pdf = new jsPDF({ orientation: orient, unit: 'pt', format: sizeOpt === 'fit' ? [pw, ph] : [pw, ph] }); }
+          else { pdf.addPage([pw, ph], orient); }
+
+          const availW = pw - margin * 2, availH = ph - margin * 2;
+          const ratio = Math.min(availW / im.w, availH / im.h);
+          const dw = im.w * ratio, dh = im.h * ratio;
+          const x = (pw - dw) / 2, y = (ph - dh) / 2;
+          const fmt = /^data:image\/png/i.test(im.dataUrl) ? 'PNG' : 'JPEG';
+          pdf.addImage(im.dataUrl, fmt, x, y, dw, dh, undefined, 'FAST');
+        });
+
+        const name = 'stackr-' + new Date().toISOString().slice(0, 10) + '.pdf';
+        const blob = pdf.output('blob');
+        const url = URL.createObjectURL(blob);
+
+        // Detect a true mobile device (not just any share-capable browser)
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const file = new File([blob], name, { type: 'application/pdf' });
+
+        if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+          // On phones: offer share/save sheet
+          try {
+            await navigator.share({ files: [file], title: name });
+            showToast('Done ✓');
+          } catch (e) {
+            if (e.name !== 'AbortError') { downloadBlob(url, name); showToast('Downloaded ✓'); }
+          }
+        } else {
+          // Desktop / everything else: download straight to disk
+          downloadBlob(url, name);
+          showToast('Downloaded ✓');
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } catch (err) {
+        console.error(err);
+        showToast('Error: ' + (err.message || 'could not build PDF'));
+      }
+      finish();
+    }
+
+    function downloadBlob(url, name) {
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    function finish() {
+      updateGo();
+      goBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 21h14"/></svg><span>Convert to PDF</span>';
+      updateGo();
+    }
+
+    // events
+    fileInput.onchange = e => { handleFiles(e.target.files); fileInput.value = '' };
+    drop.onclick = e => { if (!e.target.closest('.pick')) fileInput.click() };
+    clearBtn.onclick = () => { images = []; render(); showToast('Cleared') };
+    goBtn.onclick = generate;
+
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over') }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over') }));
+    drop.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+  </script>
+</body>
+
+</html>
